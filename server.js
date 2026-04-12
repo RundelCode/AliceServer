@@ -12,8 +12,13 @@ console.log(`Alice Server corriendo en ws://localhost:${PORT}`);
 const discoveryServer = http.createServer((req, res) => {
   if (req.url === '/alice') {
     const localIP = getLocalIP();
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ type: 'ALICE_SERVER', ip: localIP, port: PORT }));
+    res.end(JSON.stringify({
+      type: 'ALICE_SERVER',
+      ip: localIP,
+      port: PORT
+    }));
   } else {
     res.writeHead(404);
     res.end();
@@ -27,18 +32,38 @@ discoveryServer.listen(DISCOVERY_PORT, () => {
 wss.on('connection', (ws) => {
   console.log('Celular conectado');
 
-  ws.on('message', (raw) => {
+  ws.on('message', async (raw) => {
     try {
       const message = JSON.parse(raw.toString());
       console.log('Comando recibido:', message);
+
       const { action, parameter } = message;
-      executeCommand(action, parameter, ws);
+
+      if (!action) {
+        ws.send(JSON.stringify({
+          status: 'error',
+          message: 'Acción requerida'
+        }));
+        return;
+      }
+
+      await executeCommand(action, parameter, ws);
+
     } catch (e) {
-      ws.send(JSON.stringify({ status: 'error', message: 'Comando inválido' }));
+      console.error('[SERVER ERROR]', e);
+
+      ws.send(JSON.stringify({
+        status: 'error',
+        message: 'Comando inválido'
+      }));
     }
   });
 
   ws.on('close', () => {
     console.log('Celular desconectado');
+  });
+
+  ws.on('error', (err) => {
+    console.error('[WS ERROR]', err);
   });
 });

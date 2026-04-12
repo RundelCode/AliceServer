@@ -22,23 +22,39 @@ function captureScreen(parameter, ws) {
 
   execFile(
     'powershell.exe',
-    ['-NoProfile', '-Command', psScript],
-    { maxBuffer: 20 * 1024 * 1024 },
+    [
+      '-NoProfile',
+      '-WindowStyle', 'Hidden',
+      '-Command', psScript
+    ],
+    {
+      maxBuffer: 20 * 1024 * 1024,
+      windowsHide: true
+    },
     (err, stdout, stderr) => {
       if (err) {
-        ws.send(JSON.stringify({ status: 'error', message: err.message }));
+        ws.send(JSON.stringify({
+          status: 'error',
+          message: err.message
+        }));
         return;
       }
 
-      if (stderr) {
-        ws.send(JSON.stringify({ status: 'error', message: stderr }));
+      if (stderr && stderr.trim()) {
+        ws.send(JSON.stringify({
+          status: 'error',
+          message: stderr
+        }));
         return;
       }
 
       const image = stdout.trim();
 
       if (!image) {
-        ws.send(JSON.stringify({ status: 'error', message: 'Imagen vacía' }));
+        ws.send(JSON.stringify({
+          status: 'error',
+          message: 'Imagen vacía'
+        }));
         return;
       }
 
