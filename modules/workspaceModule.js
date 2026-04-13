@@ -1,84 +1,71 @@
 const { runCMD, runEXE } = require('../utils/runner');
 const { resolveApp } = require('../utils/appResolver');
 
+// Función auxiliar mejorada para reutilizar apps.json
+async function resolveAndRun(appName, extraUrl = null) {
+  const app = resolveApp(appName);
+
+  if (app.type === 'cmd') {
+    let command = app.command;
+    if (extraUrl) command += ` "${extraUrl}"`;
+    return runCMD(command);
+  }
+  else if (app.type === 'exe') {
+    if (extraUrl) {
+      return runCMD(`start "" "${app.path}" "${extraUrl}"`);
+    } else {
+      return runEXE(app.path);
+    }
+  }
+}
+
 const workspaces = {
   desarrollo: [
-    () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe'),
-    () => runCMD('start "" spotify'),
-    () => runCMD('start "" opera https://claude.ai')
+    () => resolveAndRun('vscode'),
+    () => resolveAndRun('spotify'),
+    () => resolveAndRun('opera', 'https://claude.ai')
   ],
 
   diseño: [
-    () => runCMD('start "" opera https://drive.google.com'),
-    () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe'),
-    () => runEXE('explorer.exe', ['C:\\Users\\jgec0\\Desktop\\DROP\\Productos\\-Recursos-'])
+    () => resolveAndRun('opera', 'https://drive.google.com/drive/folders/1yxzTrjHkzU8UKrQROBgWd0Y28elALg8M'),
+    () => resolveAndRun('opera', 'https://ssstik.io/es#google_vignette'),
+    () => resolveAndRun('opera', 'https://www.tiktok.com'),
+    () => resolveAndRun('capcut'),
+    () => runCMD('explorer "C:\\Users\\jgec0\\Desktop\\DROP\\Productos\\-Recursos-"')
   ],
 
-  'reinicio del sistema': [
-    async () => {
-      await safeKillAll();
-      await cleanSystem();
-      await freeMemory();
-      await restartExplorer();
-    }
+  radiante: [
+    () => resolveAndRun('discord'),
+    () => runCMD('start "" "C:\\Riot Games\\Riot Client\\RiotClientServices.exe"')
   ]
 };
 
-const KILL_LIST = ['chrome', 'opera', 'spotify', 'code', 'capcut'];
-
-const safeKillAll = () =>
-  runCMD(`powershell -Command "Get-Process | Where-Object { ${KILL_LIST.map(p => `$_ .ProcessName -like '*${p}*'`).join(' -or ')} } | Stop-Process -Force"`);
-
-const cleanSystem = async () => {
-  await runCMD('del /q/f/s %TEMP%\\*');
-  await runCMD('del /q/f/s C:\\Windows\\Temp\\*');
-  await runCMD('del /q/f/s C:\\Windows\\Prefetch\\*');
-  await runCMD('ipconfig /flushdns');
-  await runCMD('powershell -Command "Clear-RecycleBin -Force"');
-};
-
-const freeMemory = async () => {
-  await runCMD('powershell -Command "[System.GC]::Collect()"');
-};
-
-const restartExplorer = async () => {
-  await runCMD('taskkill /IM explorer.exe /F');
-  await runCMD('start "" explorer.exe');
-};
-
-function normalize(text) {
-  return text.toLowerCase().trim();
-}
-
 async function executeWorkspace(parameter, ws) {
-  const key = Object.keys(workspaces).find(k => normalize(k) === normalize(parameter));
+  const key = Object.keys(workspaces).find(k =>
+    k.toLowerCase() === (parameter || '').toLowerCase().trim()
+  );
 
   if (!key) {
-    ws.send(JSON.stringify({
+    return ws.send(JSON.stringify({
       status: 'error',
       message: `Workspace no encontrado: ${parameter}`
     }));
-    return;
   }
 
-  ws.send(JSON.stringify({
-    status: 'ok',
-    message: `Iniciando workspace: ${key}`
-  }));
+  console.log(`[Workspace] INICIANDO: ${key}`);
+  ws.send(JSON.stringify({ status: 'ok', message: `Iniciando workspace: ${key}` }));
 
   for (const step of workspaces[key]) {
     try {
       await step();
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 1600));
     } catch (err) {
-      console.error('[Workspace ERROR]', err);
+      console.error(`[Workspace ERROR] en ${key}:`, err.message);
     }
   }
 
-  ws.send(JSON.stringify({
-    status: 'ok',
-    message: `Workspace ${key} listo`
-  }));
+  ws.send(JSON.stringify({ status: 'ok', message: `Workspace ${key} completado` }));
+  console.log(`[Workspace] ${key} FINALIZADO`);
 }
 
 module.exports = { executeWorkspace };

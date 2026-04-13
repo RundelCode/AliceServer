@@ -1,5 +1,4 @@
 const os = require('os');
-const { exec } = require('child_process');
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -13,20 +12,4 @@ function getLocalIP() {
   return '127.0.0.1';
 }
 
-function execPromise(cmd) {
-  return new Promise((resolve, reject) => {
-    exec(cmd, { windowsHide: true }, (err, stdout, stderr) => {
-      if (stdout) console.log('[CMD OUTPUT]', stdout);
-      if (stderr) console.error('[CMD ERROR]', stderr);
-
-      if (err) {
-        console.error('[execPromise ERROR]', err);
-        return reject(err);
-      }
-
-      resolve();
-    });
-  });
-}
-
-module.exports = { getLocalIP, execPromise };
+module.exports = { getLocalIP };

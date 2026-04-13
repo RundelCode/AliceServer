@@ -2,21 +2,22 @@ const { WebSocketServer } = require('ws');
 const http = require('http');
 const { getLocalIP } = require('./utils/network');
 const { executeCommand } = require('./modules/index');
+const { ensureDataDir } = require('./utils/appResolver');
 
 const PORT = 8765;
 const DISCOVERY_PORT = 8766;
+
+ensureDataDir();
 
 const wss = new WebSocketServer({ port: PORT });
 console.log(`Alice Server corriendo en ws://localhost:${PORT}`);
 
 const discoveryServer = http.createServer((req, res) => {
   if (req.url === '/alice') {
-    const localIP = getLocalIP();
-
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       type: 'ALICE_SERVER',
-      ip: localIP,
+      ip: getLocalIP(),
       port: PORT
     }));
   } else {
@@ -26,44 +27,56 @@ const discoveryServer = http.createServer((req, res) => {
 });
 
 discoveryServer.listen(DISCOVERY_PORT, () => {
-  console.log(`Discovery HTTP en puerto ${DISCOVERY_PORT}`);
+  console.log(`Discovery HTTP escuchando en puerto ${DISCOVERY_PORT}`);
 });
 
 wss.on('connection', (ws) => {
   console.log('Celular conectado');
 
   ws.on('message', async (raw) => {
+    let message;
+
     try {
-      const message = JSON.parse(raw.toString());
-      console.log('Comando recibido:', message);
+      const text = raw.toString();
+      message = JSON.parse(text);
 
       const { action, parameter } = message;
 
       if (!action) {
-        ws.send(JSON.stringify({
-          status: 'error',
-          message: 'Acción requerida'
+        ws.send(JSON.stringify({ 
+          status: 'error', 
+          message: 'Acción requerida' 
         }));
         return;
       }
 
       await executeCommand(action, parameter, ws);
 
-    } catch (e) {
-      console.error('[SERVER ERROR]', e);
+    } catch (err) {
+      console.error('[MESSAGE ERROR]', err);
 
-      ws.send(JSON.stringify({
-        status: 'error',
-        message: 'Comando inválido'
-      }));
+      try {
+        ws.send(JSON.stringify({
+          status: 'error',
+          message: 'Comando inválido o error interno'
+        }));
+      } catch (sendError) {
+        console.error('[SEND ERROR] No se pudo responder al cliente');
+      }
     }
+  });
+
+  ws.on('error', (err) => {
+    console.error('[WS ERROR]', err.message);
   });
 
   ws.on('close', () => {
     console.log('Celular desconectado');
   });
-
-  ws.on('error', (err) => {
-    console.error('[WS ERROR]', err);
-  });
 });
+
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+});
+
+console.log('Servidor listo y con manejo de errores mejorado');

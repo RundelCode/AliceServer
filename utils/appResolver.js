@@ -1,48 +1,43 @@
 const fs = require('fs');
+const path = require('path');
 
-const knownApps = {
-  vscode: {
-    type: 'exe',
-    path: 'C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe'
-  },
+const DATA_DIR = path.join(__dirname, '../data');
+const APPS_FILE = path.join(DATA_DIR, 'apps.json');
 
-  opera: {
-    type: 'exe',
-    path: 'C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe'
-  },
-
-  capcut: {
-    type: 'exe',
-    path: 'C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe'
-  },
-
-  spotify: {
-    type: 'cmd',
-    command: 'start "" spotify'
-  },
-
-  discord: {
-    type: 'cmd',
-    command: 'start "" discord'
-  },
-
-  youtube: {
-    type: 'cmd',
-    command: 'start "" opera https://youtube.com'
-  }
-};
-
-function resolveApp(name) {
-  const key = name.toLowerCase().trim();
-  const app = knownApps[key];
-
-  if (!app) return null;
-
-  if (app.type === 'exe' && !fs.existsSync(app.path)) {
-    return null;
-  }
-
-  return app;
+function ensureDataDir() {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(APPS_FILE)) {
+        fs.writeFileSync(APPS_FILE, JSON.stringify({}, null, 2));
+    }
 }
 
-module.exports = { resolveApp };
+function loadApps() {
+    ensureDataDir();
+    try {
+        return JSON.parse(fs.readFileSync(APPS_FILE, 'utf8'));
+    } catch {
+        return {};
+    }
+}
+
+function resolveApp(name) {
+    const key = name.toLowerCase().trim();
+    const apps = loadApps();
+
+    if (apps[key]) return apps[key];
+
+    console.log(`[Resolver] "${name}" no encontrado → usando fallback`);
+    return {
+        type: 'cmd',
+        command: `start "" ${key}`
+    };
+}
+
+function saveApp(name, config) {
+    const apps = loadApps();
+    apps[name.toLowerCase().trim()] = config;
+    fs.writeFileSync(APPS_FILE, JSON.stringify(apps, null, 2));
+    console.log(`[Resolver] Nueva app guardada: ${name}`);
+}
+
+module.exports = { resolveApp, saveApp, ensureDataDir };
