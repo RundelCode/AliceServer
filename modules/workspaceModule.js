@@ -4,14 +4,15 @@ const workspaces = {
   desarrollo: [
     () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe'),
     () => runCMD('start spotify:'),
-    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://claude.ai"')
+    () => runCMD('start /B "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://claude.ai"')
   ],
 
   diseño: [
-    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://drive.google.com/drive/folders/1yxzTrjHkzU8UKrQROBgWd0Y28elALg8M"'),
-    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://ssstik.io/es#google_vignette"'),
-    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://www.tiktok.com"'),
+    () => runCMD('start /B "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://drive.google.com/drive/folders/1yxzTrjHkzU8UKrQROBgWd0Y28elALg8M"'),
+    () => runCMD('start /B "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://ssstik.io/es#google_vignette"'),
+    () => runCMD('start /B "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://www.tiktok.com"'),
     () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe'),
+    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\scalboost_browser\\Scalboost Browser.exe"'),
     () => runCMD('explorer "C:\\Users\\jgec0\\Desktop\\DROP\\Productos\\-Recursos-"')
   ],
 
@@ -22,48 +23,36 @@ const workspaces = {
 
   'limpieza del sistema': [
     async () => {
-      console.log('[Limpieza] Iniciando limpieza profunda del sistema...');
+      console.log('[Limpieza] Iniciando limpieza controlada del sistema...');
       await safeKillAll();
       await cleanSystem();
       await freeMemory();
+      
+      await new Promise(r => setTimeout(r, 3500));
+      
       await restartExplorer();
+      console.log('[Limpieza] Finalizada correctamente');
     }
   ]
 };
 
 const KEEP_PROCESSES = [
-  'explorer',
-  'svchost',
-  'lsass',
-  'wininit',
-  'services',
-  'csrss',
-  'smss',
-  'dllhost',
-  'conhost',
-  'sihost',
-  'taskhostw',
-  'RuntimeBroker',
-  'Antimalware',
-  'discord',
-  'DiscordPTB',
-  'DiscordCanary',
-  'Scalboost',
-  'Scalboost Browser',
-  'pm2',
-  'pm2-runtime',
-  'alice-server',
-  'node'
+  'explorer', 'svchost', 'lsass', 'wininit', 'services', 'csrss', 'smss',
+  'dllhost', 'conhost', 'sihost', 'taskhostw', 'RuntimeBroker', 'Antimalware',
+  'discord', 'DiscordPTB', 'DiscordCanary',
+  'Code',
+  'Scalboost', 'Scalboost Browser',
+  'pm2', 'pm2-runtime', 'alice-server', 'node'
 ];
+
 const safeKillAll = () =>
   runCMD(`powershell -Command "Get-Process | Where-Object { $_.ProcessName -notmatch '${KEEP_PROCESSES.join('|')}' } | Stop-Process -Force -ErrorAction SilentlyContinue"`);
 
 const cleanSystem = async () => {
   await runCMD('del /q/f/s %TEMP%\\* 2>nul');
   await runCMD('del /q/f/s C:\\Windows\\Temp\\* 2>nul');
-  await runCMD('del /q/f/s C:\\Windows\\Prefetch\\* 2>nul');
   await runCMD('ipconfig /flushdns');
-  console.log('[Limpieza] Archivos temporales y DNS limpiados');
+  console.log('[Limpieza] Temporales y DNS limpiados');
 };
 
 const freeMemory = async () => {
@@ -73,7 +62,7 @@ const freeMemory = async () => {
 
 const restartExplorer = async () => {
   await runCMD('taskkill /IM explorer.exe /F');
-  await new Promise(r => setTimeout(r, 1000));
+  await new Promise(r => setTimeout(r, 1200));
   await runCMD('start "" explorer.exe');
   console.log('[Limpieza] Explorer reiniciado');
 };
