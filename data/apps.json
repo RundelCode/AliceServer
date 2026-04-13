@@ -10,5 +10,10 @@
   },
 
   "youtube": { "type": "cmd", "command": "start \"\" opera https://youtube.com" },
-  "chrome": { "type": "cmd", "command": "start \"\" chrome" }
+  "chrome": { "type": "cmd", "command": "start \"\" chrome" },
+
+  "limpieza del sistema": { 
+    "type": "workspace", 
+    "name": "limpieza del sistema" 
+  }
 }

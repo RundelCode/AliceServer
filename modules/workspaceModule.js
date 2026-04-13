@@ -1,43 +1,81 @@
 const { runCMD, runEXE } = require('../utils/runner');
-const { resolveApp } = require('../utils/appResolver');
-
-// Función auxiliar mejorada para reutilizar apps.json
-async function resolveAndRun(appName, extraUrl = null) {
-  const app = resolveApp(appName);
-
-  if (app.type === 'cmd') {
-    let command = app.command;
-    if (extraUrl) command += ` "${extraUrl}"`;
-    return runCMD(command);
-  }
-  else if (app.type === 'exe') {
-    if (extraUrl) {
-      return runCMD(`start "" "${app.path}" "${extraUrl}"`);
-    } else {
-      return runEXE(app.path);
-    }
-  }
-}
 
 const workspaces = {
   desarrollo: [
-    () => resolveAndRun('vscode'),
-    () => resolveAndRun('spotify'),
-    () => resolveAndRun('opera', 'https://claude.ai')
+    () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe'),
+    () => runCMD('start spotify:'),
+    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://claude.ai"')
   ],
 
   diseño: [
-    () => resolveAndRun('opera', 'https://drive.google.com/drive/folders/1yxzTrjHkzU8UKrQROBgWd0Y28elALg8M'),
-    () => resolveAndRun('opera', 'https://ssstik.io/es#google_vignette'),
-    () => resolveAndRun('opera', 'https://www.tiktok.com'),
-    () => resolveAndRun('capcut'),
+    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://drive.google.com/drive/folders/1yxzTrjHkzU8UKrQROBgWd0Y28elALg8M"'),
+    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://ssstik.io/es#google_vignette"'),
+    () => runCMD('start "" "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" "https://www.tiktok.com"'),
+    () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe'),
     () => runCMD('explorer "C:\\Users\\jgec0\\Desktop\\DROP\\Productos\\-Recursos-"')
   ],
 
   radiante: [
-    () => resolveAndRun('discord'),
+    () => runCMD('start "" "%LocalAppData%\\Discord\\Update.exe" --processStart "Discord.exe"'),
     () => runCMD('start "" "C:\\Riot Games\\Riot Client\\RiotClientServices.exe"')
+  ],
+
+  'limpieza del sistema': [
+    async () => {
+      console.log('[Limpieza] Iniciando limpieza profunda del sistema...');
+      await safeKillAll();
+      await cleanSystem();
+      await freeMemory();
+      await restartExplorer();
+    }
   ]
+};
+
+const KEEP_PROCESSES = [
+  'explorer',
+  'svchost',
+  'lsass',
+  'wininit',
+  'services',
+  'csrss',
+  'smss',
+  'dllhost',
+  'conhost',
+  'sihost',
+  'taskhostw',
+  'RuntimeBroker',
+  'Antimalware',
+  'discord',
+  'DiscordPTB',
+  'DiscordCanary',
+  'Scalboost',
+  'Scalboost Browser',
+  'pm2',
+  'pm2-runtime',
+  'alice-server',
+  'node'
+];
+const safeKillAll = () =>
+  runCMD(`powershell -Command "Get-Process | Where-Object { $_.ProcessName -notmatch '${KEEP_PROCESSES.join('|')}' } | Stop-Process -Force -ErrorAction SilentlyContinue"`);
+
+const cleanSystem = async () => {
+  await runCMD('del /q/f/s %TEMP%\\* 2>nul');
+  await runCMD('del /q/f/s C:\\Windows\\Temp\\* 2>nul');
+  await runCMD('del /q/f/s C:\\Windows\\Prefetch\\* 2>nul');
+  await runCMD('ipconfig /flushdns');
+  console.log('[Limpieza] Archivos temporales y DNS limpiados');
+};
+
+const freeMemory = async () => {
+  await runCMD('powershell -Command "[System.GC]::Collect()"');
+  console.log('[Limpieza] Memoria liberada');
+};
+
+const restartExplorer = async () => {
+  await runCMD('taskkill /IM explorer.exe /F');
+  await new Promise(r => setTimeout(r, 1000));
+  await runCMD('start "" explorer.exe');
+  console.log('[Limpieza] Explorer reiniciado');
 };
 
 async function executeWorkspace(parameter, ws) {
