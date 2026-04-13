@@ -1,26 +1,17 @@
-const { execPromise } = require('../utils/network');
-
-const runCmd = (command) => execPromise(`cmd.exe /c ${command}`);
-
-const apps = {
-  vscode: 'C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe',
-  opera: 'C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe',
-  scalboost: 'C:\\Users\\jgec0\\AppData\\Local\\scalboost_browser\\Scalboost Browser.exe',
-  capcut: 'C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe',
-  spotify: 'C:\\Users\\jgec0\\AppData\\Local\\Microsoft\\WindowsApps\\Spotify.exe'
-};
+const { runCMD, runEXE } = require('../utils/runner');
+const { resolveApp } = require('../utils/appResolver');
 
 const workspaces = {
   desarrollo: [
-    () => execPromise(`"${apps.vscode}"`),
-    () => runCmd(`start "" "${apps.spotify}"`),
-    () => runCmd(`start "" "${apps.opera}" https://claude.ai`)
+    () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe'),
+    () => runCMD('start "" spotify'),
+    () => runCMD('start "" opera https://claude.ai')
   ],
 
   diseño: [
-    () => runCmd(`start "" "${apps.opera}" https://drive.google.com/drive/folders/1yxzTrjHkzU8UKrQROBgWd0Y28elALg8M`),
-    () => execPromise(`"${apps.capcut}"`),
-    () => runCmd(`explorer.exe "C:\\Users\\jgec0\\Desktop\\DROP\\Productos\\-Recursos-"`)
+    () => runCMD('start "" opera https://drive.google.com'),
+    () => runEXE('C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe'),
+    () => runEXE('explorer.exe', ['C:\\Users\\jgec0\\Desktop\\DROP\\Productos\\-Recursos-'])
   ],
 
   'reinicio del sistema': [
@@ -33,52 +24,34 @@ const workspaces = {
   ]
 };
 
-const KILL_LIST = [
-  'chrome',
-  'opera',
-  'spotify',
-  'code',
-  'capcut'
-];
+const KILL_LIST = ['chrome', 'opera', 'spotify', 'code', 'capcut'];
 
-const safeKillAll = () => execPromise(`powershell.exe -Command "
-Get-Process | Where-Object {
-  $name = $_.ProcessName.ToLower()
-  (${KILL_LIST.map(p => `$name -like '*${p}*'`).join(' -or ')})
-} | Stop-Process -Force"
-`);
+const safeKillAll = () =>
+  runCMD(`powershell -Command "Get-Process | Where-Object { ${KILL_LIST.map(p => `$_ .ProcessName -like '*${p}*'`).join(' -or ')} } | Stop-Process -Force"`);
 
 const cleanSystem = async () => {
-  await runCmd('del /q/f/s %TEMP%\\*');
-  await runCmd('del /q/f/s C:\\Windows\\Temp\\*');
-  await runCmd('del /q/f/s C:\\Windows\\Prefetch\\*');
-  await runCmd('ipconfig /flushdns');
-  await execPromise('powershell.exe -Command "Clear-RecycleBin -Force"');
+  await runCMD('del /q/f/s %TEMP%\\*');
+  await runCMD('del /q/f/s C:\\Windows\\Temp\\*');
+  await runCMD('del /q/f/s C:\\Windows\\Prefetch\\*');
+  await runCMD('ipconfig /flushdns');
+  await runCMD('powershell -Command "Clear-RecycleBin -Force"');
 };
 
 const freeMemory = async () => {
-  await execPromise(`powershell.exe -Command "[System.GC]::Collect(); Start-Sleep -Milliseconds 200; [System.GC]::WaitForPendingFinalizers();"`);
+  await runCMD('powershell -Command "[System.GC]::Collect()"');
 };
 
 const restartExplorer = async () => {
-  await runCmd('taskkill /IM explorer.exe /F');
-  await runCmd('start "" explorer.exe');
+  await runCMD('taskkill /IM explorer.exe /F');
+  await runCMD('start "" explorer.exe');
 };
 
 function normalize(text) {
-  return text
-    .toLowerCase()
-    .replace(/\b(el|la|los|las|de|del)\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return text.toLowerCase().trim();
 }
 
 async function executeWorkspace(parameter, ws) {
-  const input = normalize(parameter);
-
-  const key = Object.keys(workspaces).find(k =>
-    normalize(k) === input
-  );
+  const key = Object.keys(workspaces).find(k => normalize(k) === normalize(parameter));
 
   if (!key) {
     ws.send(JSON.stringify({
@@ -88,14 +61,12 @@ async function executeWorkspace(parameter, ws) {
     return;
   }
 
-  const steps = workspaces[key];
-
   ws.send(JSON.stringify({
     status: 'ok',
     message: `Iniciando workspace: ${key}`
   }));
 
-  for (const step of steps) {
+  for (const step of workspaces[key]) {
     try {
       await step();
       await new Promise(r => setTimeout(r, 800));
