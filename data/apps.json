@@ -1,19 +1,34 @@
 {
-  "vscode": { "type": "exe", "path": "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe" },
-  "opera": { "type": "exe", "path": "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Opera GX\\opera.exe" },
-  "capcut": { "type": "exe", "path": "C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe" },
-  "spotify": { "type": "cmd", "command": "start spotify:" },
-  
-  "discord": { 
-    "type": "cmd", 
-    "command": "start \"\" \"%LocalAppData%\\Discord\\Update.exe\" --processStart \"Discord.exe\"" 
+  "vscode": {
+    "type": "exe",
+    "path": "C:\\Users\\jgec0\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
   },
-
-  "youtube": { "type": "cmd", "command": "start \"\" opera https://youtube.com" },
-  "chrome": { "type": "cmd", "command": "start \"\" chrome" },
-
-  "limpieza del sistema": { 
-    "type": "workspace", 
-    "name": "limpieza del sistema" 
+  "capcut": {
+    "type": "exe",
+    "path": "C:\\Users\\jgec0\\AppData\\Local\\CapCut\\Apps\\CapCut.exe"
+  },
+  "spotify": {
+    "type": "cmd",
+    "command": "start spotify:"
+  },
+  "discord": {
+    "type": "cmd",
+    "command": "start \"\" \"%LocalAppData%\\Discord\\Update.exe\" --processStart \"Discord.exe\""
+  },
+  "chrome": {
+    "type": "cmd",
+    "command": "start chrome"
+  },
+  "youtube": {
+    "type": "cmd",
+    "command": "start chrome https://youtube.com"
+  },
+  "claude": {
+    "type": "cmd",
+    "command": "start chrome https://claude.ai"
+  },
+  "limpieza del sistema": {
+    "type": "workspace",
+    "name": "limpieza del sistema"
   }
 }

@@ -1,35 +1,35 @@
 const { exec } = require('child_process');
 
 function runCMD(command) {
-    console.log(`[RUN CMD] Ejecutando: ${command}`);
+  console.log(`[RUN CMD] Ejecutando → ${command}`);
 
-    return new Promise((resolve, reject) => {
-        exec(command, { windowsHide: true, shell: true }, (err, stdout, stderr) => {
-            if (stdout) console.log(`[CMD STDOUT] ${stdout}`);
-            if (stderr) console.error(`[CMD STDERR] ${stderr}`);
+  return new Promise((resolve, reject) => {
+    const fullCommand = `start /B "" ${command}`;
 
-            if (err) {
-                console.error(`[RUN CMD ERROR] ${err.message}`);
-                return reject(err);
-            }
-            resolve();
-        });
+    exec(fullCommand, { 
+      windowsHide: true, 
+      shell: true,
+      timeout: 20000 
+    }, (err, stdout, stderr) => {
+      if (stdout) console.log(`[CMD STDOUT] ${stdout.trim()}`);
+      if (stderr) console.error(`[CMD STDERR] ${stderr.trim()}`);
+
+      if (err && err.killed !== true) {
+        console.error(`[RUN CMD ERROR] ${err.message}`);
+        return reject(err);
+      }
+
+      console.log(`[RUN CMD] → Finalizado: ${command}`);
+      resolve();
     });
+  });
 }
 
 function runEXE(path, args = []) {
-    console.log(`[RUN EXE] Ejecutando: ${path} ${args.join(' ')}`);
+  console.log(`[RUN EXE] Ejecutando → ${path} ${args.join(' ')}`);
 
-    return new Promise((resolve, reject) => {
-        const { execFile } = require('child_process');
-        execFile(path, args, { windowsHide: true }, (err) => {
-            if (err) {
-                console.error(`[RUN EXE ERROR] ${err.message}`);
-                return reject(err);
-            }
-            resolve();
-        });
-    });
+  const command = `"${path}" ${args.join(' ')}`;
+  return runCMD(command);
 }
 
 module.exports = { runCMD, runEXE };
